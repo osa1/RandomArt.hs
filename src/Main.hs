@@ -1,5 +1,5 @@
 {-# LANGUAGE NoMonomorphismRestriction, OverloadedStrings #-}
-{-# OPTIONS_GHC -Wall #-}
+{-# OPTIONS_GHC -Wall -O2 #-}
 module Main where
 
 import           Control.Concurrent
