@@ -1,5 +1,5 @@
 {-# LANGUAGE NoMonomorphismRestriction, OverloadedStrings #-}
-{-# OPTIONS_GHC -Wall #-}
+{-# OPTIONS_GHC -Wall -O2 #-}
 module Main where
 
 import           Control.Concurrent
@@ -102,7 +102,7 @@ draw y sqSize op ctx
         let x' = 2.0 * (fromIntegral x + fromIntegral sqSize / 2) / size - 1.0
             y' = 2.0 * (fromIntegral y + fromIntegral sqSize / 2) / size - 1.0
         in rect (op x' y') x y sqSize sqSize ctx
-      threadDelay 1000000
+      -- threadDelay 1000000
       draw (y + sqSize) sqSize op ctx
 
 -- | Return a randomly-selected choices in give list.
