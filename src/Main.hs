@@ -78,8 +78,41 @@ wellC = Constructor 1 $ \[e] -> return $ \x y ->
   let (r, g, b) = e x y
   in (c . well . cr $ r, c . well . cr $ g, c . well . cr $ b)
 
+tentC :: (Monad m, RandomGen g) => Constructor g m
+tentC = Constructor 1 $ \[e] -> return $ \x y ->
+  let (r, g, b) = e x y
+  in (c . tent . cr $ r, c . tent . cr $ g, c . tent . cr $ b)
+
+sinC :: (Monad m, RandomGen g) => Constructor g m
+sinC = Constructor 1 $ \[e] -> do
+  phase <- getRandomR (0.0, pi)
+  freq  <- getRandomR (1.0, 6.0)
+  return $ \x y ->
+    let (r, g, b) = e x y
+    in (c $ sin (phase + freq * cr r), c $ sin (phase + freq * cr g), c $ sin (phase + freq * cr b))
+
+level :: (Monad m, RandomGen g) => Constructor g m
+level = Constructor 3 $ \[level, e1, e2] -> do
+  threshold <- getRandomR (0, 255)
+  return $ \x y ->
+    let (r1, g1, b1) = level x y
+        (r2, g2, b2) = e1 x y
+        (r3, g3, b3) = e2 x y
+        r4 = if r1 < threshold then r2 else r3
+        g4 = if g1 < threshold then g2 else g3
+        b4 = if b1 < threshold then b2 else b3
+    in (r4, g4, b4)
+
+mix :: (Monad m, RandomGen g) => Constructor g m
+mix = Constructor 3 $ \[w, e1, e2] -> return $ \x y ->
+  let w' = fromIntegral (case w x y of (a, _, _) -> a) / 255
+      c1 = e1 x y
+      c2 = e1 x y
+  in average c1 c2 w'
+
+
 constructors :: (Monad m, RandomGen g) => [Constructor g m]
-constructors = [variableX, variableY, constant, sum, wellC]
+constructors = [variableX, variableY, constant, sum, wellC, tentC, sinC{-, level-}, mix]
 
 getFirst :: (a -> Bool) -> [a] -> (a, [a])
 getFirst p (h : t)
