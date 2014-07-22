@@ -2,7 +2,6 @@
 {-# OPTIONS_GHC -Wall -O2 #-}
 module Main where
 
-import           Control.Concurrent
 import           Control.Monad
 import           Control.Monad.Random
 import qualified GHCJS.Foreign        as G
@@ -12,8 +11,9 @@ import qualified JavaScript.JQuery    as J
 
 import           Prelude              hiding (product, sum)
 
+-- | Size of canvas.
 size :: Num a => a
-size = 256
+size = 512
 
 type Color = (Int, Int, Int)
 
@@ -40,9 +40,8 @@ rect (r, g, b) x y w h ctx = do
     C.fillStyle r g b 1 ctx
     C.fillRect (fromIntegral x) (fromIntegral y) (fromIntegral w) (fromIntegral h) ctx
 
---
+--------------------------------------------------------------------------------
 -- Expression tree nodes
---
 
 type Op = Double -> Double -> Color
 
@@ -92,10 +91,10 @@ sinC = Constructor 1 $ \[e] -> do
     in (c $ sin (phase + freq * cr r), c $ sin (phase + freq * cr g), c $ sin (phase + freq * cr b))
 
 level :: (Monad m, RandomGen g) => Constructor g m
-level = Constructor 3 $ \[level, e1, e2] -> do
+level = Constructor 3 $ \[l, e1, e2] -> do
   threshold <- getRandomR (0, 255)
   return $ \x y ->
-    let (r1, g1, b1) = level x y
+    let (r1, g1, b1) = l x y
         (r2, g2, b2) = e1 x y
         (r3, g3, b3) = e2 x y
         r4 = if r1 < threshold then r2 else r3
@@ -107,18 +106,14 @@ mix :: (Monad m, RandomGen g) => Constructor g m
 mix = Constructor 3 $ \[w, e1, e2] -> return $ \x y ->
   let w' = fromIntegral (case w x y of (a, _, _) -> a) / 255
       c1 = e1 x y
-      c2 = e1 x y
+      c2 = e2 x y
   in average c1 c2 w'
-
 
 constructors :: (Monad m, RandomGen g) => [Constructor g m]
 constructors = [variableX, variableY, constant, sum, wellC, tentC, sinC{-, level-}, mix]
 
-getFirst :: (a -> Bool) -> [a] -> (a, [a])
-getFirst p (h : t)
-  | p h       = (h, t)
-  | otherwise = getFirst p t
-
+--------------------------------------------------------------------------------
+-- | Main functon: draw given op to given canvas.
 draw
   :: Int        -- ^ current row
   -> Int        -- ^ square size
@@ -138,7 +133,7 @@ draw y sqSize op ctx
       -- threadDelay 1000000
       draw (y + sqSize) sqSize op ctx
 
--- | Return a randomly-selected choices in give list.
+-- | Return a randomly-selected choice in given list.
 getRandomCs :: (Monad m, RandomGen g) => [a] -> RandT g m a
 getRandomCs [] = error "empty list given to getRandomCs"
 getRandomCs l  =
@@ -150,6 +145,7 @@ findConstructor
   :: (Monad m, RandomGen g) => (Constructor g m -> Bool) -> RandT g m (Constructor g m)
 findConstructor p = getRandomCs $ filter p constructors
 
+-- | Generate an expression of given size.
 generate :: (Monad m, RandomGen g) => Int -> RandT g m Op
 generate expSize
   | expSize == 0 = error "can't generate exp with size 0"
